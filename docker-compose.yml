@@ -7,17 +7,16 @@ services:
     working_dir: /project
     ports:
       - "1313:1313"
-    environment:
-      - REPO_NAME=  # Set this to the actual repository name when running
-    command: >
-      sh -c "cd \"$${REPO_NAME:-.}\" && hugo server --bind 0.0.0.0 --baseURL http://localhost --appendPort=false --watch"
+    entrypoint: sh
+    command: -c 'cd /project/* && exec hugo server --bind 0.0.0.0 --baseURL http://localhost --appendPort=false --watch'
+
 
   vscode:
     image: codercom/code-server:4.106.3-39
     container_name: code-server-old
     volumes:
       - ./repo:/project
-    working_dir: /project
+    working_dir: /project/developer-portal-fork-test
     ports:
       - "8087:8080"
     command: ["code-server", "--auth", "none", "--bind-addr", "0.0.0.0:8080", "/project"]
@@ -32,8 +31,9 @@ services:
       dockerfile: Dockerfile.dev
     container_name: blog-manager-old
     volumes:
-      - ./hugo_blog_manager.py:/project/hugo_blog_manager.py  # Mount script
-      - ./repo:/project  # Optional: mount whole project if needed
+      - ./hugo_blog_manager.py:/project/hugo_blog_manager.py  # Mount script for debugging
+      - ./.env:/project/.env 
+      - ./repo:/project/  
     ports:
       - "7860:7860"
     environment:

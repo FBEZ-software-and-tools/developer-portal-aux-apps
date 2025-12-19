@@ -9,7 +9,7 @@ from slugify import slugify
 from dotenv import load_dotenv, set_key
 
 # --- Configuration ---
-HUGO_PROJECT_PATH = Path("/project")
+HUGO_PROJECT_PATH = Path("/project/developer-portal-fork-test")
 CONTENT_AUTHORS_PATH = HUGO_PROJECT_PATH / "content/authors"
 DATA_AUTHORS_PATH = HUGO_PROJECT_PATH / "data/authors"
 CONTENT_BLOG_PATH = HUGO_PROJECT_PATH / "content/blog"
@@ -27,6 +27,29 @@ def list_authors():
 
 def format_author_name(name: str):
     return name.strip().replace(" ", "-").lower()
+
+def get_project_repo_name():
+    """Get the name of the repository inside /project folder."""
+    project_path = Path("/project")
+    if not project_path.exists():
+        return "developer-portal-fork-test"  # fallback
+    
+    # List all directories in /project
+    repo_dirs = [d for d in project_path.iterdir() if d.is_dir()]
+    
+    if len(repo_dirs) == 1:
+        # If there's exactly one directory, use its name
+        return repo_dirs[0].name
+    elif len(repo_dirs) > 1:
+        # If multiple directories, try to find one that looks like a git repo
+        for repo_dir in repo_dirs:
+            if (repo_dir / ".git").exists():
+                return repo_dir.name
+        # If no git repo found, use the first directory
+        return repo_dirs[0].name
+    else:
+        # No directories found
+        return "developer-portal-fork-test"  # fallback
 
 # --- Author Functions ---
 def create_author(name):
@@ -100,10 +123,10 @@ def create_article(title, author_name, pat, email, terminal):
     (article_dir / "index.md").write_text(f"""---
 title: "{title}"
 date: "{date_only}"
-summary: "This article explains how ESP-IDF brings object-oriented programming principles into C by using `structs`, opaque pointers, and handles to enforce encapsulation and modularity. It shows how components like HTTP servers and I²C buses are managed through handles that represent distinct objects for configuration and operation, and compares this approach to Python and C++."
+summary: "This article explains many useful things."
 authors:
   - "{author_formatted}"
-tags: ["ESP32C3", "OOP", "ESP-IDF"]
+tags: ["ESP-IDF"]
 ---
 """)
     terminal += "Wrote index.md\n"
@@ -125,7 +148,11 @@ tags: ["ESP32C3", "OOP", "ESP-IDF"]
     #except Exception as e:
      #   print(f"Error creating branch and committing article: {e}")
     
-    vscode_link = f"{CODE_SERVER_BASE}?folder=/project/content/blog/{y}/{m}/{article_slug}"
+    # Get repository name from /project folder
+    repo_name = get_project_repo_name()
+    terminal += f"Detected repo name: {repo_name}\n"
+    
+    vscode_link = f"{CODE_SERVER_BASE}?folder=/project/{repo_name}/content/blog/{y}/{m}/{article_slug}"
     preview_link = f"http://localhost:1313/blog/{y}/{m}/{article_slug}/"
     
     # Generate branch name for UI
@@ -411,7 +438,7 @@ with gr.Blocks(title="Developer portal article manager", css="""
                 username_tb = gr.Textbox(label="Detected Username", interactive=False)
             with gr.Row():
                 gr.Button("🔍 Check Git").click(check_git_credentials, [pat_tb, email_tb, terminal_state], [git_output, repo_display_tb, username_tb, terminal_state])
-                gr.Button("🍴 Fork Developer Portal").click(fork_repo, [pat_tb], [git_output])
+                gr.Button("🍴 Fork Developer Portal", interactive=False).click(fork_repo, [pat_tb], [git_output])
         
         with gr.TabItem("Author"):
             author_choice = gr.Radio(
@@ -442,12 +469,12 @@ with gr.Blocks(title="Developer portal article manager", css="""
             msg_tb = gr.Textbox(label="Commit Msg", value="Add authors/articles")
             with gr.Row():
                 gr.Button("💾 Commit").click(commit_changes, [msg_tb, pat_tb, terminal_state], [git_output, terminal_state])
-                gr.Button("⬆️ Push", variant="stop").click(push_changes, [branch_tb, pat_tb, msg_tb, terminal_state], [git_output, terminal_state])
+                gr.Button("⬆️ Push", variant="stop", interactive=False).click(push_changes, [branch_tb, pat_tb, msg_tb, terminal_state], [git_output, terminal_state])
         
         with gr.TabItem("Publishing Operations"):
             pr_title_tb = gr.Textbox(label="Pull Request Title", placeholder="Enter PR title...")
             pr_descripton_tb=gr.Textbox(label="Description", lines=10, max_lines=20)  # Scrollable textarea
-            gr.Button("🔀 Create Pull Request", variant="primary").click(create_pr, inputs=[pr_title_tb], outputs=[git_output])
+            gr.Button("🔀 Create Pull Request", variant="primary", interactive=False).click(create_pr, inputs=[pr_title_tb], outputs=[git_output])
     
 
         
